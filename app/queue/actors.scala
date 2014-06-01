@@ -53,16 +53,20 @@ class ActorQueue(val name: String, val diskWriter: ActorRef) extends Actor {
 }
 
 class MasterActor extends Actor {
+  implicit val timeout = Constants.bigTimeout
+
   def receive: Receive = {
     case mess @ Append(name, blob) => QueuesManager.routeToQueue(name, sender(), mess)
     case mess @ Poll(name) => QueuesManager.routeToQueue(name, sender(), mess)
     case mess @ Size(name) => {
+      implicit val ec = context.system.dispatcher
       //QueuesManager.routeToQueue(name, sender(), mess)
       val to = sender()
       Future.sequence(QueuesClusterState.refs(s"queue-$name").map(queue => (queue ? mess).mapTo[QueueSize].map(_.size)))
         .map(listOfSizes => listOfSizes.sum).map(sum => to ! QueueSize(sum))
     }
     case mess @ Clear(name) => {
+      implicit val ec = context.system.dispatcher
       //QueuesManager.routeToQueue(name, sender(), mess)
       val to = sender()
       Future.sequence(QueuesClusterState.refs(s"queue-$name").map(queue => (queue ? mess).mapTo[Cleared])).map { _ =>
