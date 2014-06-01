@@ -17,8 +17,8 @@ curl -X GET    -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName
 curl -X DELETE -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName 
 ```
 
-Setup multiple node
--------------------
+Setup multiple nodes
+--------------------
 
 To setup other nodes and add it to the cluster, just copy and deploy the app on another server and change the following configuration
 
