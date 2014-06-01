@@ -16,6 +16,7 @@ object Constants {
   val clusterRouting = Play.current.configuration.getBoolean("distributed-queues.cluster-routing").getOrElse(true)
   val fullReplication = Play.current.configuration.getBoolean("distributed-queues.full-replication").getOrElse(false)
   val conflation = Play.current.configuration.getBoolean("distributed-queues.conflation").getOrElse(false)
+  val roundRobin = Play.current.configuration.getBoolean("distributed-queues.round-robin-balancer").getOrElse(true)
   val compressEvery = Play.current.configuration.getInt("distributed-queues.compress-every").getOrElse(-1)
   val systemName = "queues-system"
   val masterName = "master-of-puppets"

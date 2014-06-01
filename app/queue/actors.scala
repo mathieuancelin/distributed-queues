@@ -13,6 +13,7 @@ import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.UnreachableMember
 import java.util.Collections
 import play.api.libs.json.JsObject
+import scala.util.Random
 
 class ActorQueue(val name: String, val diskWriter: ActorRef) extends Actor {
 
@@ -140,6 +141,14 @@ object QueuesClusterState {
   private[this] val next = new AtomicLong(0)
   private[this] val membersList = Collections.checkedList(new java.util.ArrayList[Member](), classOf[Member])
 
+  def nextItem() = {
+    if (Constants.roundRobin) {
+      (next.getAndIncrement % membersList.size).toInt
+    } else {
+      Random.nextInt(membersList.size)
+    }
+  }
+
   def addMember(member: Member) = {
     if (!membersList.contains(member)) membersList.add(member)
   }
@@ -157,12 +166,12 @@ object QueuesClusterState {
 
   def selectNextMember(): Member = {
     if (membersList.isEmpty) throw new RuntimeException("No members ...")
-    else membersList.get((next.getAndIncrement % membersList.size).toInt)
+    else membersList.get(nextItem())
   }
 
   def selectNextMemberAsRef(to: String): ActorSelection = {
     if (membersList.isEmpty) throw new RuntimeException("No members ...")
-    else QueuesManager.system().actorSelection(ActorPath.fromString(membersList.get((next.getAndIncrement % membersList.size).toInt).address.toString) / "user" / to)
+    else QueuesManager.system().actorSelection(ActorPath.fromString(membersList.get(nextItem()).address.toString) / "user" / to)
   }
 
   def displayState() = {
