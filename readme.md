@@ -13,8 +13,15 @@ curl -X POST   -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName
 # poll the head of the queue named 'myQueueName'
 curl -X GET    -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName
 
+# get the size of the queue named 'myQueueName'
+curl -X GET    -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName/size 
+
+# clear the queue named 'myQueueName'
+curl -X POST   -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName/clear
+
 # delete queue named 'myQueueName'
 curl -X DELETE -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName 
+
 ```
 
 Setup multiple nodes

@@ -74,7 +74,7 @@ object Application extends Controller {
     (QueuesManager.master() ? Size(name)).mapTo[QueueSize].map(r => Ok(Json.obj("name" -> name, "size" -> r.size)))
   }
 
-  def clear(name: String) = ApiAction(Constants.token) {
+  def clear(name: String) = ApiAction(Constants.adminToken) {
     (QueuesManager.master() ? Clear(name)).mapTo[Cleared].map(_ => Ok)
   }
 
