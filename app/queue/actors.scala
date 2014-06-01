@@ -61,14 +61,12 @@ class MasterActor extends Actor {
     case mess @ Poll(name) => QueuesManager.routeToQueue(name, sender(), mess)
     case mess @ Size(name) => {
       implicit val ec = context.system.dispatcher
-      //QueuesManager.routeToQueue(name, sender(), mess)
       val to = sender()
       Future.sequence(QueuesClusterState.refs(s"queue-$name").map(queue => (queue ? mess).mapTo[QueueSize].map(_.size)))
         .map(listOfSizes => listOfSizes.sum).map(sum => to ! QueueSize(sum))
     }
     case mess @ Clear(name) => {
       implicit val ec = context.system.dispatcher
-      //QueuesManager.routeToQueue(name, sender(), mess)
       val to = sender()
       Future.sequence(QueuesClusterState.refs(s"queue-$name").map(queue => (queue ? mess).mapTo[Cleared])).map { _ =>
         to ! Cleared()
