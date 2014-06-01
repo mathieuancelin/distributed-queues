@@ -5,8 +5,10 @@ import java.io.File
 
 trait QueueCommand
 case class Append(name: String, blob: JsObject) extends QueueCommand
+case class ReplicationAppend(name: String, blob: JsObject) extends QueueCommand
 case class ReplayAppend(name: String, blob: JsObject) extends QueueCommand
 case class Poll(name: String) extends QueueCommand
+case class ReplicationPoll(name: String) extends QueueCommand
 case class ReplayPoll(name: String) extends QueueCommand
 case class Size(name: String) extends QueueCommand
 case class Clear(name: String) extends QueueCommand

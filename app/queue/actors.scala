@@ -1,7 +1,7 @@
 package queue
 
 import akka.actor._
-import scala.concurrent.Await
+import scala.concurrent.{Future, Await}
 import akka.pattern.ask
 import java.io.File
 import tools.{FileUtils, IdGenerator, Constants}
@@ -12,28 +12,33 @@ import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.UnreachableMember
 import java.util.Collections
+import play.api.libs.json.JsObject
 
 class ActorQueue(val name: String, val diskWriter: ActorRef) extends Actor {
 
   val queue: FileBackedQueue = new FileBackedQueue(name, diskWriter)
   val counter = new AtomicInteger(0)
 
+  def append(blob: JsObject, sender: ActorRef) = {
+    val id = queue.append(blob)
+    sender ! Added(id)
+  }
+
+  def poll(sender: ActorRef) = {
+    sender ! Blob(queue.poll())
+    if (Constants.compressEvery != -1 && counter.compareAndSet(Constants.compressEvery, 0)) {
+      // TODO : avoid blocking here, waste of time ...
+      val start = System.currentTimeMillis()
+      val path = Await.result(ask(diskWriter, SendFilePath())(Constants.timeout).mapTo[FilePath].map(_.path)(context.system.dispatcher), Constants.timeout.duration)
+      FileUtils.emptyFile(new File(path))
+      queue.queue.foreach(line => FileUtils.appendOffer(new File(path), queue.name, IdGenerator.nextId(), line))
+      Constants.logger.info(s"File compression in ${System.currentTimeMillis() - start} ms")
+    } else counter.incrementAndGet()
+  }
+
   def receive: Receive = {
-    case mess @ Append(_, blob) => {
-      val id = queue.append(blob)
-      sender() ! Added(id)
-    }
-    case mess @ Poll(_) => {
-      sender() ! Blob(queue.poll())
-      if (Constants.compressEvery != -1 && counter.compareAndSet(Constants.compressEvery, 0)) {
-        // TODO : avoid blocking here, waste of time ...
-        val start = System.currentTimeMillis()
-        val path = Await.result(ask(diskWriter, SendFilePath())(Constants.timeout).mapTo[FilePath].map(_.path)(context.system.dispatcher), Constants.timeout.duration)
-        FileUtils.emptyFile(new File(path))
-        queue.queue.foreach(line => FileUtils.appendOffer(new File(path), queue.name, IdGenerator.nextId(), line))
-        Constants.logger.info(s"File compression in ${System.currentTimeMillis() - start} ms")
-      } else counter.incrementAndGet()
-    }
+    case mess @ Append(_, blob) => append(blob, sender())
+    case mess @ Poll(_) => poll(sender())
     case mess @ Size(_) => sender() ! QueueSize(queue.size())
     case mess @ Clear(_) => {
       queue.clear()
@@ -41,6 +46,8 @@ class ActorQueue(val name: String, val diskWriter: ActorRef) extends Actor {
     }
     case ReplayAppend(_, blob) => queue.append(blob, false)
     case ReplayPoll(_) => queue.poll(false)
+    case ReplicationAppend(_, blob) => append(blob, sender())
+    case ReplicationPoll(_) => poll(sender())
     case _ =>
   }
 }
@@ -49,8 +56,19 @@ class MasterActor extends Actor {
   def receive: Receive = {
     case mess @ Append(name, blob) => QueuesManager.routeToQueue(name, sender(), mess)
     case mess @ Poll(name) => QueuesManager.routeToQueue(name, sender(), mess)
-    case mess @ Size(name) => QueuesManager.routeToQueue(name, sender(), mess)  // TODO : handle cluster mode (ask the world and reduce)
-    case mess @ Clear(name) => QueuesManager.routeToQueue(name, sender(), mess) // TODO : handle cluster mode (ask the world and reduce)
+    case mess @ Size(name) => {
+      //QueuesManager.routeToQueue(name, sender(), mess)
+      val to = sender()
+      Future.sequence(QueuesClusterState.refs(s"queue-$name").map(queue => (queue ? mess).mapTo[QueueSize].map(_.size)))
+        .map(listOfSizes => listOfSizes.sum).map(sum => to ! QueueSize(sum))
+    }
+    case mess @ Clear(name) => {
+      //QueuesManager.routeToQueue(name, sender(), mess)
+      val to = sender()
+      Future.sequence(QueuesClusterState.refs(s"queue-$name").map(queue => (queue ? mess).mapTo[Cleared])).map { _ =>
+        to ! Cleared()
+      }
+    }
     case CreateQueue(name) => {
       QueuesManager.createQueue(name, true)
       sender() ! QueueCreated()
