@@ -4,7 +4,7 @@ import play.api.{Application, GlobalSettings}
 import queue.{ClusterHandler, MasterActor, QueuesManager}
 import tools.{Constants, Reference}
 
-// TODO : metrics and stats page for the whole cluster
+// TODO FEATURE : metrics and stats page for the whole cluster
 object Global extends GlobalSettings {
 
   val actorSystem = Reference[ActorSystem]("queues-system")

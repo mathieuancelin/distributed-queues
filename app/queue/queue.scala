@@ -2,7 +2,7 @@ package queue
 
 import java.util.concurrent.ConcurrentLinkedQueue
 import play.api.libs.json.Json
-import tools.{Reference, Constants, IdGenerator}
+import tools.{FileUtils, Reference, Constants, IdGenerator}
 import akka.actor._
 import play.api.Play
 import scala.concurrent.Future
