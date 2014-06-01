@@ -9,6 +9,7 @@ object Constants {
   val timeout = Timeout(2, TimeUnit.SECONDS)
   val bigTimeout = Timeout(30, TimeUnit.SECONDS)
   val logger = Logger("DistributedQueues")
+  val root = Play.current.getFile(Play.current.configuration.getString("distributed-queues.file-path").getOrElse("queues"))
   val generatorId = Play.current.configuration.getLong("distributed-queues.node-id").getOrElse(1L)
   val password = Play.current.configuration.getString("application.monitor-password").getOrElse(throw new RuntimeException("No password configured"))
   val token = Play.current.configuration.getString("application.api-token").getOrElse(throw new RuntimeException("No token configured"))

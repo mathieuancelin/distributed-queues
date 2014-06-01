@@ -4,7 +4,6 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import play.api.libs.json.Json
 import tools.{FileUtils, Reference, Constants, IdGenerator}
 import akka.actor._
-import play.api.Play
 import scala.concurrent.Future
 import play.api.libs.json.JsObject
 import akka.pattern.ask
@@ -15,8 +14,6 @@ object QueuesManager {
 
   implicit val timeout = Constants.bigTimeout
 
-  private[this] val root = Play.current.getFile("queues")
-
   val system = Reference[ActorSystem]("system")
   val master = Reference[ActorRef]("master")
   val cluster = Reference[Cluster]("cluster")
@@ -26,9 +23,9 @@ object QueuesManager {
     master.set(m)
     system.set(as)
     cluster.set(c)
-    if (!root.exists()) root.mkdirs()
+    if (!Constants.root.exists()) Constants.root.mkdirs()
     Constants.logger.info(s"Re-synchronization ...")
-    val done = root.listFiles()
+    val done = Constants.root.listFiles()
       .filter(file => file.getName.endsWith("-queue.log"))
       .map(file => {
       val queuename = file.getName.replace("-queue.log", "")
@@ -63,7 +60,7 @@ object QueuesManager {
   def createQueue(name: String, propagate: Boolean): ActorRef = {
     val queueName = s"queue-$name"
     val writerName = s"queue-$name-writer"
-    val writer = system().actorOf(Props(classOf[FileWriter], name, root), writerName)
+    val writer = system().actorOf(Props(classOf[FileWriter], name, Constants.root), writerName)
     val queue = system().actorOf(Props(classOf[ActorQueue], name, writer), queueName)
     Constants.logger.info(s"Queue '$name' created ...")
     if (propagate) {
