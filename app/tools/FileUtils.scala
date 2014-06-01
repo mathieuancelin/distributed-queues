@@ -13,9 +13,18 @@ object FileUtils {
   val DELETEHEAD = "DELETEHEAD"
   val charset = Charset.forName("UTF-8")
 
-  def emptyFile(file: File) = Files.write("", file, charset)
-  def appendOffer(file: File, name: String, id: Long, blob: String) = Files.append(s"$APPENDTO$delimiter$name$delimiter$id$delimiter$blob\n", file, charset)
-  def appendPoll(file: File, name: String) = Files.append(s"$DELETEHEAD$delimiter$name\n", file, charset)
+  def emptyFile(file: File) = {
+    // TODO : handle non persistent queue
+    Files.write("", file, charset)
+  }
+  def appendOffer(file: File, name: String, id: Long, blob: String) = {
+    // TODO : handle non persistent queue
+    Files.append(s"$APPENDTO$delimiter$name$delimiter$id$delimiter$blob\n", file, charset)
+  }
+  def appendPoll(file: File, name: String) = {
+    // TODO : handle non persistent queue
+    Files.append(s"$DELETEHEAD$delimiter$name\n", file, charset)
+  }
   def readLines(file: File, offer: (String, String, String) => Unit, poll: (String) => Unit): Int = {
     val counter = new AtomicInteger(0)
     Files.readLines(file, charset, new LineProcessor[Unit] {

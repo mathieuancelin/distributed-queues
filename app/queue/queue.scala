@@ -34,11 +34,13 @@ object QueuesManager {
       Constants.logger.info(s"Insertion of existing slugs in queue '$queuename'")
       val processed = FileUtils.readLines(file, (name, id, blob) => ref ! ReplayAppend(name, Json.parse(blob).as[JsObject]), (name) => ref ! ReplayPoll(name))
       Constants.logger.info(s"Inserted $processed items")
+      // TODO : compress the queue
     })
     Constants.logger.info(s"Re-synchronization done (${done.size} queues.) !")
   }
 
   def routeToQueue(name: String, sender: ActorRef, command: QueueCommand): Future[Unit] = {
+    // TODO : handle auto queue creation
     if (Constants.clusterRouting) {
       val fu = (QueuesClusterState.selectNextMemberAsRef(s"queue-$name") ? command).mapTo[Response].map { response =>
         sender ! response
@@ -58,6 +60,7 @@ object QueuesManager {
   }
 
   def createQueue(name: String, propagate: Boolean): ActorRef = {
+    // TODO : check if queue exists
     val queueName = s"queue-$name"
     val writerName = s"queue-$name-writer"
     val writer = system().actorOf(Props(classOf[FileWriter], name, Constants.root), writerName)
@@ -72,6 +75,7 @@ object QueuesManager {
   }
 
   def deleteQueue(name: String, propagate: Boolean): Future[Unit] = {
+    // TODO : delete logs
     val fu = for {
       _ <- system().actorSelection(system() / s"queue-$name") ? PoisonPill
       _ <- system().actorSelection(system() / s"queue-$name-writer") ? PoisonPill
