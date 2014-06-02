@@ -1,10 +1,9 @@
 Distributed queues
 =================================
 
-Loosely ordered (or not) distributed in-memory message queue system (with disk persistence) as an HTTP service.
-Support full replication for strongly ordered queues.
+Loosely ordered distributed in-memory message queue system (with disk persistence) as an HTTP service.
 
-Data are split (by default) across cluster nodes (with random or round robin routing) for better scaling. 
+Data are split (by default) across all cluster nodes (with random or round robin routing) for better scaling. 
 
 ```
 # creates a queue named 'myQueueName'
@@ -78,7 +77,6 @@ distributed-queues {
   file-root = "queues"        # root directory where persistence logs are stored
   node-id = 1                 # id of the node for unique uuid generation in the cluster
   cluster-routing = true      # routing (to nodes) handled by cluster
-  full-replication = false    # enable full replication on each node
   compress-every = 102400     # enable log files compression every n read operaiton
   round-robin-balancer = true # routing with round robin or random
   auto-create-queues = true   # automatically create queue if not exists
