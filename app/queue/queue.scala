@@ -9,6 +9,7 @@ import play.api.libs.json.JsObject
 import akka.pattern.ask
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import akka.cluster.Cluster
+import java.util
 
 object QueuesManager {
 
@@ -17,6 +18,7 @@ object QueuesManager {
   val system = Reference[ActorSystem]("system")
   val master = Reference[ActorRef]("master")
   val cluster = Reference[Cluster]("cluster")
+  val existing = new util.HashSet[String]()
 
   // highly blocking method to consolidate state before running app
   def onStart(as: ActorSystem, c: Cluster, m: ActorRef) = {
@@ -34,13 +36,15 @@ object QueuesManager {
       Constants.logger.info(s"Insertion of existing slugs in queue '$queuename'")
       val processed = FileUtils.readLines(file, (name, id, blob) => ref ! ReplayAppend(name, Json.parse(blob).as[JsObject]), (name) => ref ! ReplayPoll(name))
       Constants.logger.info(s"Inserted $processed items")
-      // TODO : compress the queue
+      ref ! CompressQueue()
     })
     Constants.logger.info(s"Re-synchronization done (${done.size} queues.) !")
   }
 
   def routeToQueue(name: String, sender: ActorRef, command: QueueCommand): Future[Unit] = {
-    // TODO : handle auto queue creation
+    if (Constants.autoCreateQueues && !existing.contains(name)) {
+      createQueue(name, true)
+    }
     if (Constants.clusterRouting) {
       val fu = (QueuesClusterState.selectNextMemberAsRef(s"queue-$name") ? command).mapTo[Response].map { response =>
         sender ! response
@@ -59,23 +63,24 @@ object QueuesManager {
     }
   }
 
-  def createQueue(name: String, propagate: Boolean): ActorRef = {
-    // TODO : check if queue exists
+  def createQueue(name: String, propagate: Boolean): ActorSelection = {
     val queueName = s"queue-$name"
     val writerName = s"queue-$name-writer"
-    val writer = system().actorOf(Props(classOf[FileWriter], name, Constants.root), writerName)
-    val queue = system().actorOf(Props(classOf[ActorQueue], name, writer), queueName)
-    Constants.logger.info(s"Queue '$name' created ...")
-    if (propagate) {
-      QueuesClusterState.refsWithoutMe(Constants.masterName).foreach { ref =>
-        ref ! ReplicationCreateQueue(name)
+    if (!existing.contains(name)) {
+      val writer = system().actorOf(Props(classOf[FileWriter], name, Constants.root), writerName)
+      system().actorOf(Props(classOf[ActorQueue], name, writer), queueName)
+      Constants.logger.info(s"Queue '$name' created ...")
+      if (propagate) {
+        QueuesClusterState.refsWithoutMe(Constants.masterName).foreach { ref =>
+          ref ! ReplicationCreateQueue(name)
+        }
       }
     }
-    queue
+    system().actorSelection(s"/user/$queueName")
   }
 
   def deleteQueue(name: String, propagate: Boolean): Future[Unit] = {
-    // TODO : delete logs
+    system().actorSelection(system() / s"queue-$name-writer") ! DeleteFile()
     val fu = for {
       _ <- system().actorSelection(system() / s"queue-$name") ? PoisonPill
       _ <- system().actorSelection(system() / s"queue-$name-writer") ? PoisonPill

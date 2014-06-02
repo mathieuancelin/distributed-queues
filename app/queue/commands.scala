@@ -23,6 +23,7 @@ trait FileCommand
 case class AppendToLog(id: Long, name: String, blob: String) extends FileCommand
 case class DeleteFromLog(name: String) extends FileCommand
 case class ClearLog(name: String) extends FileCommand
+case class DeleteFile() extends FileCommand
 
 trait Response
 case class QueueSize(size: Int) extends Response
@@ -32,6 +33,6 @@ case class Cleared() extends Response
 case class QueueCreated() extends Response
 case class QueueDeleted() extends Response
 
-
+case class CompressQueue()
 case class SendFilePath()
 case class FilePath(path: String)

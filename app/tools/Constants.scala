@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit
 
 object Constants {
 
+
   val timeout = Timeout(2, TimeUnit.SECONDS)
   val bigTimeout = Timeout(30, TimeUnit.SECONDS)
   val logger = Logger("DistributedQueues")
@@ -19,6 +20,8 @@ object Constants {
   val conflation = Play.current.configuration.getBoolean("distributed-queues.conflation").getOrElse(false)
   val roundRobin = Play.current.configuration.getBoolean("distributed-queues.round-robin-balancer").getOrElse(true)
   val compressEvery = Play.current.configuration.getInt("distributed-queues.compress-every").getOrElse(-1)
+  val autoCreateQueues = Play.current.configuration.getBoolean("distributed-queues.auto-create-queues").getOrElse(false)
+  val persistToDisk = Play.current.configuration.getBoolean("distributed-queues.persist-to-disk").getOrElse(true)
   val systemName = "queues-system"
   val masterName = "master-of-puppets"
   val clusterHandlerName = "cluster-handler"

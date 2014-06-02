@@ -4,6 +4,10 @@ import java.nio.charset.Charset
 import java.io.File
 import com.google.common.io.{LineProcessor, Files}
 import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.{ExecutionContext, Await}
+import queue.{FilePath, SendFilePath}
+import akka.actor.ActorRef
+import java.util.concurrent.ConcurrentLinkedQueue
 
 object FileUtils {
 
@@ -14,16 +18,13 @@ object FileUtils {
   val charset = Charset.forName("UTF-8")
 
   def emptyFile(file: File) = {
-    // TODO : handle non persistent queue
-    Files.write("", file, charset)
+    if (Constants.persistToDisk) Files.write("", file, charset)
   }
   def appendOffer(file: File, name: String, id: Long, blob: String) = {
-    // TODO : handle non persistent queue
-    Files.append(s"$APPENDTO$delimiter$name$delimiter$id$delimiter$blob\n", file, charset)
+    if (Constants.persistToDisk) Files.append(s"$APPENDTO$delimiter$name$delimiter$id$delimiter$blob\n", file, charset)
   }
   def appendPoll(file: File, name: String) = {
-    // TODO : handle non persistent queue
-    Files.append(s"$DELETEHEAD$delimiter$name\n", file, charset)
+    if (Constants.persistToDisk) Files.append(s"$DELETEHEAD$delimiter$name\n", file, charset)
   }
   def readLines(file: File, offer: (String, String, String) => Unit, poll: (String) => Unit): Int = {
     val counter = new AtomicInteger(0)
@@ -46,5 +47,16 @@ object FileUtils {
       override def getResult: Unit = ()
     })
     counter.get()
+  }
+
+  def compressLogFile(diskWriter: ActorRef, name: String, queue: ConcurrentLinkedQueue[String], ec: ExecutionContext) = {
+    import akka.pattern.ask
+    import collection.JavaConversions._
+    // TODO : avoid blocking here, waste of time ...
+    val start = System.currentTimeMillis()
+    val path = Await.result(ask(diskWriter, SendFilePath())(Constants.timeout).mapTo[FilePath].map(_.path)(ec), Constants.timeout.duration)
+    FileUtils.emptyFile(new File(path))
+    queue.foreach(line => FileUtils.appendOffer(new File(path), name, IdGenerator.nextId(), line))
+    Constants.logger.info(s"File compression in ${System.currentTimeMillis() - start} ms")
   }
 }

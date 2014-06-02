@@ -1,10 +1,10 @@
 package queue
 
 import akka.actor._
-import scala.concurrent.{Future, Await}
+import scala.concurrent.Future
 import akka.pattern.ask
 import java.io.File
-import tools.{FileUtils, IdGenerator, Constants}
+import tools.{FileUtils, Constants}
 import java.util.concurrent.atomic.{AtomicLong, AtomicInteger}
 import collection.JavaConversions._
 import akka.cluster.{Member, Cluster}
@@ -28,12 +28,7 @@ class ActorQueue(val name: String, val diskWriter: ActorRef) extends Actor {
   def poll(sender: ActorRef) = {
     sender ! Blob(queue.poll())
     if (Constants.compressEvery != -1 && counter.compareAndSet(Constants.compressEvery, 0)) {
-      // TODO : avoid blocking here, waste of time ...
-      val start = System.currentTimeMillis()
-      val path = Await.result(ask(diskWriter, SendFilePath())(Constants.timeout).mapTo[FilePath].map(_.path)(context.system.dispatcher), Constants.timeout.duration)
-      FileUtils.emptyFile(new File(path))
-      queue.queue.foreach(line => FileUtils.appendOffer(new File(path), queue.name, IdGenerator.nextId(), line))
-      Constants.logger.info(s"File compression in ${System.currentTimeMillis() - start} ms")
+      FileUtils.compressLogFile(diskWriter, name, queue.queue, context.system.dispatcher)
     } else counter.incrementAndGet()
   }
 
@@ -49,6 +44,7 @@ class ActorQueue(val name: String, val diskWriter: ActorRef) extends Actor {
     case ReplayPoll(_) => queue.poll(false)
     case ReplicationAppend(_, blob) => append(blob, sender())
     case ReplicationPoll(_) => poll(sender())
+    case CompressQueue() => FileUtils.compressLogFile(diskWriter, name, queue.queue, context.system.dispatcher)
     case _ =>
   }
 }
@@ -102,6 +98,7 @@ class FileWriter(name: String, root: File) extends Actor {
     case DeleteFromLog(_) => FileUtils.appendPoll(log, name)
     case ClearLog(_) => FileUtils.emptyFile(log)
     case SendFilePath() => sender() ! FilePath(log.getAbsolutePath)
+    case DeleteFile() => log.delete()
     case _ =>
   }
 }
