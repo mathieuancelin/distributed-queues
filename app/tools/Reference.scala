@@ -18,6 +18,8 @@ class Reference[T](name: String) {
     ref.get().getOrElse(throw new RuntimeException(s"Reference to ${name} was not properly initialized ..."))
   }
 
+  def get() = apply()
+
   def isEmpty: Boolean = ref.get.isEmpty
   def isDefined: Boolean = ref.get.isDefined
   def getOrElse[B >: T](default: => B): B = ref.get.getOrElse(default)
