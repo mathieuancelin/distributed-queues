@@ -7,6 +7,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import play.api.libs.json.{JsNull, JsValue, JsObject, JsArray}
 import scala.util.Try
 import scala.util.control.NoStackTrace
+import tools.{UUID, Reference}
+import scala.None
 
 package object members {
   implicit final class BetterMember(member: Member) {
@@ -69,6 +71,11 @@ package object options {
       case None => none
     }
     def |(a: => A): A = option.getOrElse(a)
+    def asRef() = asRef(UUID.generate())
+    def asRef(name: String) = option match {
+      case Some(value) => Reference[A](name, value)
+      case None => Reference.empty(name)
+    }
   }
 }
 
