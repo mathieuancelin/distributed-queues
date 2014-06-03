@@ -1,6 +1,5 @@
 package tools
 
-import play.api.Play
 import java.util.concurrent.atomic.AtomicLong
 
 object IdGenerator {

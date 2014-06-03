@@ -71,10 +71,10 @@ package object options {
       case None => none
     }
     def |(a: => A): A = option.getOrElse(a)
-    def asRef() = asRef(UUID.generate())
-    def asRef(name: String) = option match {
+    def asRef(): Reference[A] = asRef(UUID.generate())
+    def asRef(name: String): Reference[A] = option match {
       case Some(value) => Reference[A](name, value)
-      case None => Reference.empty(name)
+      case None => Reference.empty[A](name)
     }
   }
 }

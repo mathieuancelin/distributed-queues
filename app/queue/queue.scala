@@ -1,6 +1,6 @@
 package queue
 
-import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 import play.api.libs.json.Json
 import tools.{FileUtils, Reference, Constants, IdGenerator}
 import akka.actor._
@@ -42,11 +42,14 @@ object QueuesManager {
   }
 
   def routeToQueue(name: String, sender: ActorRef, command: QueueCommand): Future[Unit] = {
+    val context = MetricsStats.routingTime().time()
     if (Constants.autoCreateQueues && !existing.contains(name)) {
       createQueue(name, true)
     }
     if (Constants.clusterRouting) {
-      val fu = (QueuesClusterState.selectNextMemberAsRef(s"queue-$name") ? command).mapTo[Response].map { response =>
+      val routee = QueuesClusterState.selectNextMemberAsRef(s"queue-$name")
+      context.close()
+      val fu = (routee ? command).mapTo[Response].map { response =>
         sender ! response
       }
       // TODO : uncomment when viable
@@ -58,6 +61,7 @@ object QueuesManager {
       // }
       fu
     } else {
+      context.close()
       (system().actorSelection(system() / s"queue-$name") ? command).mapTo[Response].map { response =>
         sender ! response
       }
@@ -70,6 +74,7 @@ object QueuesManager {
     if (!existing.contains(name)) {
       val writer = system().actorOf(Props(classOf[FileWriter], name, Constants.root), writerName)
       system().actorOf(Props(classOf[ActorQueue], name, writer), queueName)
+      existing.add(name)
       Constants.logger.info(s"Queue '$name' created ...")
       if (propagate) {
         QueuesClusterState.refsWithoutMe(Constants.masterName).foreach { ref =>
@@ -82,6 +87,8 @@ object QueuesManager {
 
   def deleteQueue(name: String, propagate: Boolean): Future[Unit] = {
     system().actorSelection(system() / s"queue-$name-writer") ! DeleteFile()
+    existing.remove(name)
+    FileBackedQueue.queues.remove(name)
     val fu = for {
       _ <- system().actorSelection(system() / s"queue-$name") ? PoisonPill
       _ <- system().actorSelection(system() / s"queue-$name-writer") ? PoisonPill
@@ -95,16 +102,23 @@ object QueuesManager {
   }
 }
 
+private[queue] object FileBackedQueue {
+  val queues = new ConcurrentHashMap[String, FileBackedQueue]()
+}
+
 private[queue] class FileBackedQueue(val name: String, val diskWriter: ActorRef) {
+
+  FileBackedQueue.queues.putIfAbsent(name, this)  // Awful
 
   val queue = new ConcurrentLinkedQueue[String]()
 
   def append(blob: JsObject, sync: Boolean = true): Long = {
-    // TODO FEATURE : handle conflation
     val id = IdGenerator.nextId()
     val finalBlob = Json.stringify(blob ++ Json.obj("__queueStamp" -> id))
     if (sync) diskWriter ! AppendToLog(id, name, finalBlob)
     queue.offer(finalBlob)
+    MetricsStats.queuesHits().mark()
+    MetricsStats.queuesWriteHits().mark()
     id
   }
 
@@ -112,13 +126,21 @@ private[queue] class FileBackedQueue(val name: String, val diskWriter: ActorRef)
     if (sync) diskWriter ! DeleteFromLog(name)
     val blob = queue.poll()
     val r = Option(blob).map(b => Json.parse(b).as[JsObject])
+    MetricsStats.queuesReadHits().mark()
+    MetricsStats.queuesHits().mark()
     r
   }
 
-  def size(): Int = queue.size()
+  def size(): Int = {
+    MetricsStats.queuesHits().mark()
+    MetricsStats.queuesReadHits().mark()
+    queue.size()
+  }
 
   def clear(sync: Boolean = true) = {
     if (sync) diskWriter ! ClearLog(name)
+    MetricsStats.queuesHits().mark()
+    MetricsStats.queuesWriteHits().mark()
     queue.clear()
   }
 }

@@ -9,11 +9,12 @@ import java.util.concurrent.atomic.{AtomicLong, AtomicInteger}
 import collection.JavaConversions._
 import akka.cluster.{Member, Cluster}
 import akka.cluster.ClusterEvent._
-import akka.cluster.ClusterEvent.MemberUp
-import akka.cluster.ClusterEvent.UnreachableMember
 import java.util.Collections
-import play.api.libs.json.JsObject
 import scala.util.Random
+import akka.cluster.ClusterEvent.MemberRemoved
+import akka.cluster.ClusterEvent.MemberUp
+import play.api.libs.json.JsObject
+import akka.cluster.ClusterEvent.UnreachableMember
 
 class ActorQueue(val name: String, val diskWriter: ActorRef) extends Actor {
 
@@ -53,36 +54,48 @@ class MasterActor extends Actor {
   implicit val timeout = Constants.bigTimeout
 
   def receive: Receive = {
-    case mess @ Append(name, blob) => QueuesManager.routeToQueue(name, sender(), mess)
-    case mess @ Poll(name) => QueuesManager.routeToQueue(name, sender(), mess)
+    case mess @ Append(name, blob) => {
+      MetricsStats.masterHits().mark()
+      QueuesManager.routeToQueue(name, sender(), mess)
+    }
+    case mess @ Poll(name) => {
+      MetricsStats.masterHits().mark()
+      QueuesManager.routeToQueue(name, sender(), mess)
+    }
     case mess @ Size(name) => {
       implicit val ec = context.system.dispatcher
+      MetricsStats.masterHits().mark()
       val to = sender()
       Future.sequence(QueuesClusterState.refs(s"queue-$name").map(queue => (queue ? mess).mapTo[QueueSize].map(_.size)))
         .map(listOfSizes => listOfSizes.sum).map(sum => to ! QueueSize(sum))
     }
     case mess @ Clear(name) => {
       implicit val ec = context.system.dispatcher
+      MetricsStats.masterHits().mark()
       val to = sender()
       Future.sequence(QueuesClusterState.refs(s"queue-$name").map(queue => (queue ? mess).mapTo[Cleared])).map { _ =>
         to ! Cleared()
       }
     }
     case CreateQueue(name) => {
+      MetricsStats.masterHits().mark()
       QueuesManager.createQueue(name, true)
       sender() ! QueueCreated()
     }
     case DeleteQueue(name) => {
+      MetricsStats.masterHits().mark()
       QueuesManager.deleteQueue(name, true)
       sender() ! QueueDeleted()
     }
     case ReplicationCreateQueue(name) => {
+      MetricsStats.masterHits().mark()
       QueuesManager.createQueue(name, false)
     }
     case ReplicationDeleteQueue(name) => {
+      MetricsStats.masterHits().mark()
       QueuesManager.deleteQueue(name, false)
     }
-    case _ =>
+    case _ => MetricsStats.masterHits().mark()
   }
 }
 

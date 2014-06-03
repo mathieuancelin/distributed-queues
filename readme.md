@@ -77,7 +77,7 @@ distributed-queues {
   file-root = "queues"        # root directory where persistence logs are stored
   node-id = 1                 # id of the node for unique uuid generation in the cluster
   cluster-routing = true      # routing (to nodes) handled by cluster
-  compress-every = 102400     # enable log files compression every n read operaiton
+  compress-every = 102400     # enable log files compression every n read operation
   round-robin-balancer = true # routing with round robin or random
   auto-create-queues = true   # automatically create queue if not exists
 }

@@ -5,7 +5,7 @@ import java.io.File
 import com.google.common.io.{LineProcessor, Files}
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{ExecutionContext, Await}
-import queue.{FilePath, SendFilePath}
+import queue.{MetricsStats, FilePath, SendFilePath}
 import akka.actor.ActorRef
 import java.util.concurrent.ConcurrentLinkedQueue
 
@@ -19,15 +19,21 @@ object FileUtils {
 
   // TODO : handle file rolling
   def emptyFile(file: File) = {
+    val context = MetricsStats.diskWriteTime().time()
     if (Constants.persistToDisk) Files.write("", file, charset)
+    context.stop()
   }
   // TODO : handle file rolling
   def appendOffer(file: File, name: String, id: Long, blob: String) = {
+    val context = MetricsStats.diskWriteTime().time()
     if (Constants.persistToDisk) Files.append(s"$APPENDTO$delimiter$name$delimiter$id$delimiter$blob\n", file, charset)
+    context.stop()
   }
   // TODO : handle file rolling
   def appendPoll(file: File, name: String) = {
+    val context = MetricsStats.diskWriteTime().time()
     if (Constants.persistToDisk) Files.append(s"$DELETEHEAD$delimiter$name\n", file, charset)
+    context.stop()
   }
   // TODO : handle file rolling
   def readLines(file: File, offer: (String, String, String) => Unit, poll: (String) => Unit): Int = {
@@ -57,7 +63,9 @@ object FileUtils {
   def compressLogFile(diskWriter: ActorRef, name: String, queue: ConcurrentLinkedQueue[String], ec: ExecutionContext) = {
     import akka.pattern.ask
     import collection.JavaConversions._
+    // TODO : maybe no such a good idea, lot of trouble here (rolling, etc ...)
     // TODO : avoid blocking here, waste of time ...
+    MetricsStats.compactionHits().mark()
     val start = System.currentTimeMillis()
     val path = Await.result(ask(diskWriter, SendFilePath())(Constants.timeout).mapTo[FilePath].map(_.path)(ec), Constants.timeout.duration)
     FileUtils.emptyFile(new File(path))

@@ -35,6 +35,7 @@ class Reference[T](name: String) {
   def exists(p: (T) => Boolean): Boolean = ref.get.exists(p)
   def forall(p: (T) => Boolean): Boolean = ref.get.forall(p)
   def foreach[U](f: (T) => U): Unit = ref.get.foreach(f)
+  def call[U](f: (T) => U): Unit = ref.get.foreach(f)
   def collect[B](pf: PartialFunction[T, B]): Reference[B] = new Reference[B](name).withValue(ref.get.collect(pf))
   def orElse[B >: T](alternative: => Reference[B]): Reference[B] = new Reference[B](name).withValue(ref.get.orElse(alternative.asOption()))
 }

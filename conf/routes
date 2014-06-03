@@ -4,6 +4,7 @@
 
 # Home page
 GET        /                    controllers.Application.index
+GET        /stats.json          controllers.Application.stats
 
 GET    /queues/:name            controllers.Application.poll(name)
 POST   /queues/:name            controllers.Application.append(name)

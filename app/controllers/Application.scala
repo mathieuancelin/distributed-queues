@@ -23,6 +23,7 @@ import java.nio.charset.Charset
 import play.api.{Mode, Play}
 import tools.Constants
 
+// TODO : support CORS for in browser use
 object Application extends Controller {
 
   implicit val timeout = Constants.bigTimeout
@@ -66,20 +67,49 @@ object Application extends Controller {
     Ok(views.html.index("Your new application is ready."))
   }
 
+  def stats = Action {
+    Ok(JsonReporter.toJson(MetricsStats.metrics()))
+  }
+
+  import tools.implicits.debug.futureKcombine
+
   def append(name: String) = JsonApiAction(Constants.token) { request =>
-    (QueuesManager.master() ? Append(name, request.body.as[JsObject])).mapTo[Added].map(added => Ok(Json.obj("id" -> added.id)))
+    val context = MetricsStats.responsesTime().time()
+    val context2 = MetricsStats.responsesWriteTime().time()
+    (QueuesManager.master() ? Append(name, request.body.as[JsObject]))
+      .mapTo[Added].map(added => Ok(Json.obj("id" -> added.id)))
+      .thenCombine { _ =>
+        context.close()
+        context2.close()
+      }
   }
 
   def size(name: String) = ApiAction(Constants.token) {
+    val context = MetricsStats.responsesTime().time()
+    val context2 = MetricsStats.responsesReadTime().time()
     (QueuesManager.master() ? Size(name)).mapTo[QueueSize].map(r => Ok(Json.obj("name" -> name, "size" -> r.size)))
+      .thenCombine { _ =>
+        context.close()
+        context2.close()
+      }
   }
 
   def clear(name: String) = ApiAction(Constants.adminToken) {
-    (QueuesManager.master() ? Clear(name)).mapTo[Cleared].map(_ => Ok)
+    val context = MetricsStats.responsesTime().time()
+    val context2 = MetricsStats.responsesWriteTime().time()
+    (QueuesManager.master() ? Clear(name)).mapTo[Cleared].map(_ => Ok).thenCombine { _ =>
+      context.close()
+      context2.close()
+    }
   }
 
   def poll(name: String) = ApiAction(Constants.token) {
-    (QueuesManager.master() ? Poll(name)).mapTo[Blob].map(blob => Ok(blob.blob.getOrElse(Json.obj())))
+    val context = MetricsStats.responsesTime().time()
+    val context2 = MetricsStats.responsesReadTime().time()
+    (QueuesManager.master() ? Poll(name)).mapTo[Blob].map(blob => Ok(blob.blob.getOrElse(Json.obj()))).thenCombine { _ =>
+      context.close()
+      context2.close()
+    }
   }
 
   def create(name: String) = ApiAction(Constants.adminToken) {
