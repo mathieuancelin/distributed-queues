@@ -18,7 +18,7 @@
         function blob() {
             return {
                 message: "Hello",
-                date: new Date().toTimeString() + ""
+                date: new Date().toTimeString()
             };
         }
 
@@ -34,7 +34,8 @@
                 dataType: "json",
                 contentType: "application/json",
                 success: function (response) {
-                    $("#message1").html("Sent to queue : " + JSON.stringify(blob) + ", with correlation id : " + JSON.stringify(response));
+                    $("#message1").html("Sent to queue : " + JSON.stringify(blob)
+                        + ", with correlation id : " + JSON.stringify(response));
                 },
                 error: function (xhr, status) {
                     $("#message1").html("Error while posting ...");

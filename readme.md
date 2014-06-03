@@ -106,17 +106,13 @@ You can use it from your browser using CORS :
 <div id="message2"></div>
 <br/>
 <button type="button">Try queues</button>
-
-
 <script type="text/javascript">
     $(function() {
-
         var queueName = "corsQueue";
-
         function blob() {
             return {
                 message: "Hello",
-                date: new Date().toTimeString() + ""
+                date: new Date().toTimeString()
             };
         }
 
@@ -132,7 +128,8 @@ You can use it from your browser using CORS :
                 dataType: "json",
                 contentType: "application/json",
                 success: function (response) {
-                    $("#message1").html("Sent to queue : " + JSON.stringify(blob) + ", with correlation id : " + JSON.stringify(response));
+                    $("#message1").html("Sent to queue : " + JSON.stringify(blob) 
+                        + ", with correlation id : " + JSON.stringify(response));
                 },
                 error: function (xhr, status) {
                     $("#message1").html("Error while posting ...");
@@ -151,7 +148,8 @@ You can use it from your browser using CORS :
                 dataType: "json",
                 contentType: "application/json",
                 success: function (response) {
-                    $("#message2").html("Fetched from queue : " + JSON.stringify(response));
+                    $("#message2").html("Fetched from queue : " 
+                            + JSON.stringify(response));
                 },
                 error: function (xhr, status) {
                     $("#message2").html("Error while fetching ...");
