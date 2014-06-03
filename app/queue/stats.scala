@@ -57,7 +57,7 @@ object MetricsStats {
       .convertDurationsTo(TimeUnit.MILLISECONDS)
       .build())
 
-    jmxReporter.set(JmxReporter.forRegistry(metrics()).build())
+    jmxReporter.set(JmxReporter.forRegistry(metrics()).inDomain("distributed-queues").build())
     jmxReporter().start()
 
     Play.current.mode match {

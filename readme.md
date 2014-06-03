@@ -83,4 +83,21 @@ distributed-queues {
 }
 ```
 
+Metrics
+----------
+
+You can get metrics as Json through HTTP with 
+
+```
+curl http://myhost:9000/metrics.json
+```
+
+or through JMX under the `distributed-queues` MBean
+
+CORS
+------
+
+Soon ...
+
+
 
