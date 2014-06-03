@@ -49,12 +49,13 @@ object QueuesManager {
       val fu = (QueuesClusterState.selectNextMemberAsRef(s"queue-$name") ? command).mapTo[Response].map { response =>
         sender ! response
       }
-      if (Constants.fullReplication) {
-        command match {
-          case Append(_, blob) => QueuesClusterState.refsWithoutMe(s"queue-$name").foreach(ref => ref ! ReplicationAppend(name, blob))
-          case Poll(_) => QueuesClusterState.refsWithoutMe(s"queue-$name").foreach(ref => ref ! ReplicationPoll(name))
-        }
-      }
+      // TODO : uncomment when viable
+      // if (Constants.fullReplication) {
+      //   command match {
+      //     case Append(_, blob) => QueuesClusterState.refsWithoutMe(s"queue-$name").foreach(ref => ref ! ReplicationAppend(name, blob))
+      //     case Poll(_) => QueuesClusterState.refsWithoutMe(s"queue-$name").foreach(ref => ref ! ReplicationPoll(name))
+      //   }
+      // }
       fu
     } else {
       (system().actorSelection(system() / s"queue-$name") ? command).mapTo[Response].map { response =>

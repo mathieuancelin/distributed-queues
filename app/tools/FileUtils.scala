@@ -17,15 +17,19 @@ object FileUtils {
   val DELETEHEAD = "DELETEHEAD"
   val charset = Charset.forName("UTF-8")
 
+  // TODO : handle file rolling
   def emptyFile(file: File) = {
     if (Constants.persistToDisk) Files.write("", file, charset)
   }
+  // TODO : handle file rolling
   def appendOffer(file: File, name: String, id: Long, blob: String) = {
     if (Constants.persistToDisk) Files.append(s"$APPENDTO$delimiter$name$delimiter$id$delimiter$blob\n", file, charset)
   }
+  // TODO : handle file rolling
   def appendPoll(file: File, name: String) = {
     if (Constants.persistToDisk) Files.append(s"$DELETEHEAD$delimiter$name\n", file, charset)
   }
+  // TODO : handle file rolling
   def readLines(file: File, offer: (String, String, String) => Unit, poll: (String) => Unit): Int = {
     val counter = new AtomicInteger(0)
     Files.readLines(file, charset, new LineProcessor[Unit] {
@@ -49,6 +53,7 @@ object FileUtils {
     counter.get()
   }
 
+  // TODO : handle file rolling
   def compressLogFile(diskWriter: ActorRef, name: String, queue: ConcurrentLinkedQueue[String], ec: ExecutionContext) = {
     import akka.pattern.ask
     import collection.JavaConversions._

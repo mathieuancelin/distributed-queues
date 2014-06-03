@@ -17,6 +17,18 @@ object MetricsStats {
     metrics.set(new MetricRegistry())
     metrics().register("jvm.memory", MemoryMetrics)
     metrics().register("cpu", CpuMetrics)
+    // TODO : number of queues
+    // TODO : total items in queues
+    // TODO : file compaction hits
+    // TODO : global master hits
+    // TODO : global queue hits (rw)
+    // TODO : global queue hits (r)
+    // TODO : global queue hits (w)
+    // TODO : gobal response time (rw)
+    // TODO : gobal response time (r)
+    // TODO : gobal response time (w)
+    // TODO : time used to route stuff
+    // TODO : time for write on disk
     consoleReporter.set(ConsoleReporter.forRegistry(metrics())
       .convertRatesTo(TimeUnit.SECONDS)
       .convertDurationsTo(TimeUnit.MILLISECONDS)
@@ -33,22 +45,16 @@ object MetricsStats {
 
 object MemoryMetrics extends MetricSet {
 
-  val mxBean = ManagementFactory.getMemoryMXBean
-  val memoryPools = new util.ArrayList[MemoryPoolMXBean](ManagementFactory.getMemoryPoolMXBeans)
+  private[this] val mxBean = ManagementFactory.getMemoryMXBean
+  private[this] val memoryPools = new util.ArrayList[MemoryPoolMXBean](ManagementFactory.getMemoryPoolMXBeans)
 
   def getMetrics = {
     val gauges = new java.util.HashMap[String, Metric]()
     gauges.put("total.used", new Gauge[Long] {
       def getValue: Long = mxBean.getHeapMemoryUsage.getUsed + mxBean.getNonHeapMemoryUsage.getUsed
     })
-    gauges.put("total.committed", new Gauge[Long] {
-      def getValue: Long = mxBean.getHeapMemoryUsage.getCommitted + mxBean.getNonHeapMemoryUsage.getCommitted
-    })
     gauges.put("heap.used", new Gauge[Long] {
       def getValue: Long = mxBean.getHeapMemoryUsage.getUsed
-    })
-    gauges.put("heap.committed", new Gauge[Long] {
-      def getValue: Long =  mxBean.getHeapMemoryUsage.getCommitted
     })
     Collections.unmodifiableMap(gauges)
   }
@@ -65,10 +71,10 @@ object CpuMetrics extends Gauge[Double] {
       lastUpTime = upTime
       lastCpuTime = cpuTime
     }
-    return retVal
+    retVal
   }
-  private final val runtimeMXBean: RuntimeMXBean = ManagementFactory.getRuntimeMXBean
-  private final val osBean: OperatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean.asInstanceOf[OperatingSystemMXBean]
-  private var lastUpTime: Long = runtimeMXBean.getUptime
-  private var lastCpuTime: Long = osBean.getProcessCpuTime
+  private[this] val runtimeMXBean: RuntimeMXBean = ManagementFactory.getRuntimeMXBean
+  private[this] val osBean: OperatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean.asInstanceOf[OperatingSystemMXBean]
+  private[this] var lastUpTime: Long = runtimeMXBean.getUptime
+  private[this] var lastCpuTime: Long = osBean.getProcessCpuTime
 }
