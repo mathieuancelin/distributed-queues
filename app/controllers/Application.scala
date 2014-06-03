@@ -49,18 +49,33 @@ object Application extends Controller {
 
   def ApiAction(token: String)(action: => Future[Result]) = Action.async { request =>
     Play.current.mode match {
-      case Mode.Dev => action
-      case Mode.Test => action
-      case Mode.Prod => request.headers.get("AuthToken").filter(t => token == t).fold(Future.successful(Unauthorized("")))(_ => action)
+      case Mode.Dev => action.map(_.withHeaders("Access-Control-Allow-Origin" -> "*"))
+      case Mode.Test => action.map(_.withHeaders("Access-Control-Allow-Origin" -> "*"))
+      case Mode.Prod => request.headers.get("AuthToken").filter(t => token == t)
+        .fold(Future.successful(Unauthorized("")))(_ => action.map(_.withHeaders("Access-Control-Allow-Origin" -> "*")))
     }
   }
 
   def JsonApiAction(token: String)(action: Request[JsValue] => Future[Result]) = Action.async(parse.json) { request =>
     Play.current.mode match {
-      case Mode.Dev => action(request)
-      case Mode.Test => action(request)
-      case Mode.Prod => request.headers.get("AuthToken").filter(t => token == t).fold(Future.successful(Unauthorized("")))(_ => action(request))
+      case Mode.Dev => action(request)map(_.withHeaders("Access-Control-Allow-Origin" -> "*"))
+      case Mode.Test => action(request)map(_.withHeaders("Access-Control-Allow-Origin" -> "*"))
+      case Mode.Prod => request.headers.get("AuthToken").filter(t => token == t)
+        .fold(Future.successful(Unauthorized("")))(_ => action(request).map(_.withHeaders("Access-Control-Allow-Origin" -> "*")))
     }
+  }
+
+  def preflightMetrics = preflight
+  def preflightQueue(name: String) = preflight
+  def preflightClear(name: String) = preflight
+  def preflightSize(name: String) = preflight
+
+  def preflight = Action {
+    Ok.withHeaders(
+      "Access-Control-Allow-Origin" -> "*",
+      "Access-Control-Allow-Methods" -> "POST, PUT, DELETE, GET, OPTIONS",
+      "Access-Control-Allow-Headers" -> "AuthToken, Content-Type"
+    )
   }
 
   def index = Secured("admin", Constants.password) {

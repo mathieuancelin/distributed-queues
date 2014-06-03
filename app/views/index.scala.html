@@ -2,4 +2,70 @@
 
 @main("Queues Monitoring") {
 
+<h3>Queues CORS test</h3>
+<div id="message1"></div>
+<br/>
+<div id="message2"></div>
+<br/>
+<button type="button">Try queues</button>
+
+
+<script type="text/javascript">
+    $(function() {
+
+        var queueName = "corsQueue";
+
+        function blob() {
+            return {
+                message: "Hello",
+                date: new Date().toTimeString() + ""
+            };
+        }
+
+        function addToQueue(blob) {
+            return $.ajax({
+                url: "http://distributed.queues.com:9000/queues/" + queueName,
+                type: "POST",
+                crossDomain: true,
+                data: JSON.stringify(blob),
+                headers: {
+                    AuthToken: "oWOYldXFjEZ6qXGRdQuEeLFSMh9MYcbQK9UVI21TRcLotnAVvMWjl6VEvAzIOixd"
+                },
+                dataType: "json",
+                contentType: "application/json",
+                success: function (response) {
+                    $("#message1").html("Sent to queue : " + JSON.stringify(blob) + ", with correlation id : " + JSON.stringify(response));
+                },
+                error: function (xhr, status) {
+                    $("#message1").html("Error while posting ...");
+                }
+            });
+        }
+
+        function fetchFromQueue() {
+            return $.ajax({
+                url: "http://distributed.queues.com:9000/queues/" + queueName,
+                type: "GET",
+                crossDomain: true,
+                headers: {
+                    AuthToken: "oWOYldXFjEZ6qXGRdQuEeLFSMh9MYcbQK9UVI21TRcLotnAVvMWjl6VEvAzIOixd"
+                },
+                dataType: "json",
+                contentType: "application/json",
+                success: function (response) {
+                    $("#message2").html("Fetched from queue : " + JSON.stringify(response));
+                },
+                error: function (xhr, status) {
+                    $("#message2").html("Error while fetching ...");
+                }
+            });
+        }
+
+        $("button").click(function(e) {
+            e.preventDefault();
+            addToQueue(blob());
+            setTimeout(function() {fetchFromQueue();}, 200);
+        });
+    });
+</script>
 }
