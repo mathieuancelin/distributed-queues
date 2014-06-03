@@ -15,9 +15,9 @@ object QueuesManager {
 
   implicit val timeout = Constants.bigTimeout
 
-  val system = Reference[ActorSystem]("system")
-  val master = Reference[ActorRef]("master")
-  val cluster = Reference[Cluster]("cluster")
+  val system = Reference.empty[ActorSystem]("system")
+  val master = Reference.empty[ActorRef]("master")
+  val cluster = Reference.empty[Cluster]("cluster")
   val existing = new util.HashSet[String]()
 
   // highly blocking method to consolidate state before running app

@@ -10,8 +10,8 @@ import java.util
 
 object MetricsStats {
 
-  val metrics = new Reference[MetricRegistry]("metrics")
-  val consoleReporter = new Reference[ConsoleReporter]("consoleReporter")
+  val metrics = Reference.empty[MetricRegistry]("metrics")
+  val consoleReporter = Reference.empty[ConsoleReporter]("consoleReporter")
 
   def onStart() = {
     metrics.set(new MetricRegistry())

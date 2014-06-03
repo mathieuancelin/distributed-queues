@@ -7,7 +7,7 @@ import tools.{Constants, Reference}
 // TODO FEATURE : metrics and stats page for the whole cluster
 object Global extends GlobalSettings {
 
-  val actorSystem = Reference[ActorSystem]("queues-system")
+  val actorSystem = Reference.empty[ActorSystem]("queues-system")
 
   override def onStart(app: Application): Unit = {
     actorSystem.set(ActorSystem(Constants.systemName))
