@@ -1,7 +1,7 @@
 Distributed queues
 =================================
 
-Loosely ordered distributed in-memory message queue system (with disk persistence) as an HTTP service.
+Loosely ordered distributed in-memory message queue system (with disk persistence) for JSON data as an HTTP service.
 
 Data are split (by default) across all cluster nodes (with random or round robin routing) for better scaling. 
 
