@@ -61,7 +61,7 @@ object MetricsStats {
     jmxReporter().start()
 
     Play.current.mode match {
-      case Mode.Dev => consoleReporter().start(5, TimeUnit.SECONDS)
+      case Mode.Dev => consoleReporter().start(20, TimeUnit.SECONDS)
       case _ =>
     }
   }

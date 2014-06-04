@@ -69,7 +69,8 @@ object Application extends Controller {
   def preflightClear(name: String) = preflight
   def preflightSize(name: String) = preflight
 
-  def preflight = Action {
+  def preflight = Action { req =>
+    Constants.logger.info("Preflight " + req.uri)
     Ok.withHeaders(
       "Access-Control-Allow-Origin" -> "*",
       "Access-Control-Allow-Methods" -> "POST, PUT, DELETE, GET, OPTIONS",
