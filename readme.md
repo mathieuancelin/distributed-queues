@@ -26,6 +26,8 @@ curl -X DELETE -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName
 
 ```
 
+Default token are stored in the application.conf file.
+
 Setup multiple nodes
 --------------------
 
