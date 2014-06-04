@@ -122,7 +122,7 @@ You can use it from your browser using CORS :
     
         function addToQueue(blob) {
             return $.ajax({
-                url: "http://distributed.queues.com:9000/queues/" + queueName,
+                url: "http://distributed.queues.com/queues/" + queueName,
                 type: "POST",
                 crossDomain: true,
                 data: JSON.stringify(blob),
@@ -142,7 +142,7 @@ You can use it from your browser using CORS :
     
         function fetchFromQueue() {
             return $.ajax({
-                url: "http://distributed.queues.com:9000/queues/" + queueName,
+                url: "http://distributed.queues.com/queues/" + queueName,
                 type: "GET",
                 crossDomain: true,
                 headers: {
@@ -183,6 +183,34 @@ You can use it from your browser using CORS :
         });
     });
 </script>
+```
+
+or if you're lazy just add the js client lib 
+
+```html
+ <script src="http://distributed.queues.com/assets/javascripts/distributed-queues.js" type="text/javascript"></script>
+```
+
+and just play with it 
+
+```javascript
+var queue = DistributedQueues
+    .host('http://distributed.queues.com:9000')
+    .withTokens("XXXXX", "XXXXX")
+    .queue("myqueue");
+
+queue.push({"hello":"world"}).then(function() {
+    return queue.size();
+}).then(function(size) {
+    console.log("queue size : " + size.size);
+}).then(function() {
+    return queue.poll();
+}).then(function(slug) {
+    console.log(slug);
+    return queue.size();
+}).then(function(size) {
+    console.log("queue size : " + size.size);
+});
 ```
 
 
