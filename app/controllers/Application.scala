@@ -23,7 +23,6 @@ import java.nio.charset.Charset
 import play.api.{Mode, Play}
 import tools.Constants
 
-// TODO : support CORS for in browser use
 object Application extends Controller {
 
   implicit val timeout = Constants.bigTimeout
