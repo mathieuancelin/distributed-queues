@@ -1,6 +1,6 @@
 import akka.actor.{ActorSystem, Props}
 import akka.cluster.Cluster
-import play.api.{Application, GlobalSettings}
+import play.api.{Play, Application, GlobalSettings}
 import queue.{MetricsStats, ClusterHandler, MasterActor, QueuesManager}
 import tools.{Constants, Reference}
 
@@ -10,7 +10,7 @@ object Global extends GlobalSettings {
 
   override def onStart(app: Application): Unit = {
     MetricsStats.onStart()
-    actorSystem.set(ActorSystem(Constants.systemName))
+    actorSystem.set(ActorSystem(Constants.systemName, Play.current.configuration.underlying.getConfig("distributed-queues")))
     val master = actorSystem().actorOf(Props[MasterActor], Constants.masterName)
     val cluster = Cluster(actorSystem())
     QueuesManager.onStart(actorSystem(), cluster, master)

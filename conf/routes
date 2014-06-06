@@ -3,20 +3,25 @@
 # ~~~~
 
 # Home page
-GET           /                          controllers.Application.index
+GET            /                          controllers.Application.index
 
-OPTIONS       /metrics.json              controllers.Application.preflightMetrics
-OPTIONS       /queues/:name              controllers.Application.preflightQueue(name)
-OPTIONS       /queues/:name/clear        controllers.Application.preflightClear(name)
-OPTIONS       /queues/:name/size         controllers.Application.preflightSize(name)
 
-GET           /metrics.json              controllers.Application.stats
-GET           /queues/:name              controllers.Application.poll(name)
-POST          /queues/:name              controllers.Application.append(name)
-PUT           /queues/:name              controllers.Application.create(name)
-DELETE        /queues/:name              controllers.Application.delete(name)
-POST          /queues/:name/clear        controllers.Application.clear(name)
-GET           /queues/:name/size         controllers.Application.size(name)
+
+OPTIONS        /metrics.json              controllers.Application.preflightMetrics
+OPTIONS        /queues/:name              controllers.Application.preflightQueue(name)
+OPTIONS        /queues/:name/clear        controllers.Application.preflightClear(name)
+OPTIONS        /queues/:name/size         controllers.Application.preflightSize(name)
+
+GET            /metrics.json              controllers.Application.stats
+GET            /queues/:name              controllers.Application.poll(name)
+POST           /queues/:name              controllers.Application.append(name)
+PUT            /queues/:name              controllers.Application.create(name)
+DELETE         /queues/:name              controllers.Application.delete(name)
+GET            /queues/:name/stream       controllers.Application.consumeAsStream(name)
+GET            /queues/:name/sse          controllers.Application.consumeAsSSE(name, token)
+GET            /queues/:name/ws           controllers.Application.consumeAsWebSocket(name, token)
+POST           /queues/:name/clear        controllers.Application.clear(name)
+GET            /queues/:name/size         controllers.Application.size(name)
 
 # Map static resources from the /public folder to the /assets URL path
-GET           /assets/*file              controllers.Assets.at(path="/public", file)
+GET            /assets/*file              controllers.Assets.at(path="/public", file)

@@ -3,25 +3,30 @@ package controllers
 import play.api.mvc._
 import akka.pattern.ask
 import queue._
-import play.api.libs.json.{JsValue, JsObject, Json}
-import akka.util.Timeout
+import play.api.libs.json._
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{Future, ExecutionContext}
-import queue.Size
+import java.nio.charset.Charset
+import play.api.{Mode, Play}
+import tools.Constants
+import play.api.libs.iteratee.{Iteratee, Enumeratee, Enumerator}
+import play.api.libs.concurrent.Promise
 import queue.QueueDeleted
+import queue.DeleteQueue
+import queue.Append
+import scala.Some
+import queue.Blob
+import queue.Size
+import play.api.mvc.Result
 import queue.Added
 import queue.QueueCreated
 import queue.QueueSize
 import queue.Clear
-import queue.DeleteQueue
-import queue.Append
+import play.api.libs.json.JsObject
 import queue.Cleared
 import queue.CreateQueue
 import queue.Poll
-import queue.Blob
-import java.nio.charset.Charset
-import play.api.{Mode, Play}
-import tools.Constants
+import play.api.libs.EventSource
 
 object Application extends Controller {
 
@@ -84,6 +89,33 @@ object Application extends Controller {
 
   def stats = Action {
     Ok(JsonReporter.toJson(MetricsStats.metrics()))
+  }
+
+  def consumeAsWebSocket(name: String, token: String) = WebSocket.using[JsValue] { headers =>
+    if (token != Constants.token && Play.current.mode == Mode.Prod) throw new RuntimeException("Not authorized")
+    val in = Iteratee.foreach[JsValue](doc => QueuesManager.master() ! Append(name, doc.as[JsObject]))
+    val out = consumerEnumerator(name)
+    (in, out)
+  }
+
+  def consumeAsStream(name: String) = ApiAction(Constants.token) {
+    Future.successful( Ok.chunked( consumerEnumerator(name) ) )
+  }
+
+  def consumeAsSSE(name: String, token: String) = Action {
+    if (token == Constants.token || Play.current.mode != Mode.Prod) Ok.feed( consumerEnumerator(name) &> EventSource()).as("text/event-stream")
+    else Unauthorized("")
+  }
+
+  def consumerEnumerator(name: String): Enumerator[JsValue] = {
+    Enumerator.generateM[JsValue] {
+      (QueuesManager.master() ? Poll(name)).mapTo[Blob].flatMap {
+        case Blob(Some(obj)) => Future.successful(Some(obj))
+        case Blob(None) => Promise.timeout(Some(JsNull), 1000, TimeUnit.MILLISECONDS)
+      }
+    } through Enumeratee.collect[JsValue] {
+      case o: JsObject => o
+    }
   }
 
   import tools.implicits.debug.futureKcombine
