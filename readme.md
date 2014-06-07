@@ -5,24 +5,44 @@ Loosely ordered distributed in-memory message queue system (with disk persistenc
 
 Data are split (by default) across all cluster nodes (with random or round robin routing) for better scaling. 
 
-```
+```sh
 # creates a queue named 'myQueueName'
-curl -X PUT    -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName 
+curl -X PUT \  
+     -H 'AuthToken: xxxx' \
+     http://myhost:9000/queues/myQueueName 
 
 # post a json object on queue named 'myQueueName'
-curl -X POST   -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName 
+curl -X POST 
+     -d '{"Hello":"World"}'  \
+     -H 'Content-type: application/json' \
+     -H 'AuthToken: xxxx' \ 
+     http://myhost:9000/queues/myQueueName 
 
 # poll the head of the queue named 'myQueueName'
-curl -X GET    -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName
+curl -X GET \   
+     -H 'AuthToken: xxxx' \
+     http://myhost:9000/queues/myQueueName
 
 # get the size of the queue named 'myQueueName'
-curl -X GET    -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName/size 
+curl -X GET \
+     -H 'AuthToken: xxxx' \
+     http://myhost:9000/queues/myQueueName/size 
 
 # clear the queue named 'myQueueName'
-curl -X POST   -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName/clear
+curl -X POST \  
+     -H 'AuthToken: xxxx' \
+     http://myhost:9000/queues/myQueueName/clear
+     
+# streaming head of the queue named 'myQueueName'
+curl -X GET \
+     -N \
+     -H 'AuthToken: xxxx' \
+     http://myhost:9000/queues/myQueueName/stream
 
 # delete queue named 'myQueueName'
-curl -X DELETE -H 'AuthToken: xxxx' http://myhost:9000/queues/myQueueName 
+curl -X DELETE \
+     -H 'AuthToken: xxxx' \
+     http://myhost:9000/queues/myQueueName 
 
 ```
 
