@@ -46,8 +46,10 @@ curl -X DELETE \
 
 ```
 
-You can also consume a queue as SSE stream @ http://myhost:9000/queues/myQueueName/sse
-You can also consume and feed a queue as WebSocket @ http://myhost:9000/queues/myQueueName/ws
+You can also consume a queue as SSE stream @ `http://myhost:9000/queues/myQueueName/sse`
+
+You can also consume and feed a queue as WebSocket @ `http://myhost:9000/queues/myQueueName/ws` 
+
 For SSE and WebSocket you need to provide a `token` param in the URL.
 
 Default token are stored in the application.conf file.
